@@ -814,7 +814,7 @@
       }
       app.endUndoGroup();
     }
-
+    /* AdjustmentLayer */
     function addAdjustmentLayer() {
       var c = app.project.activeItem;
       if (!c) return;
@@ -869,9 +869,10 @@
           layer.name = getUniqueName(c, "Adj for " + c.name);
         }
       }
+
       app.endUndoGroup();
     }
-
+    /* BlackSolid */
     function addSolidBlack() {
       var c = app.project.activeItem;
       if (!c) return;
@@ -925,60 +926,87 @@
           layer.name = getUniqueName(c, "Solid_for_" + c.name);
         }
       }
-
-      //   for (var q = 0; q < cnt; q++) {
-      //     var l = c.layers.addSolid([0, 0, 0], "Black Solid", w, h, 1);
-      //     l.label = getTargetLabel(0);
-      //     l.inPoint = min;
-      //     l.outPoint = max;
-      //     if (sel.length > 0) {
-      //       l.moveBefore(c.layer(idx));
-      //       l.name = getUniqueName(
-      //         c,
-      //         "Solid_for_" + getCleanBaseName(sel[0].name)
-      //       );
-      //       l.position.setValue(sel[0].position.value);
-      //     } else l.name = getUniqueName(c, "Solid_for_" + c.name);
-      //   }
       app.endUndoGroup();
     }
+    /* Camera */
     function addCamera() {
-      var c = app.project.activeItem;
-      if (!c) return;
+      var comp = app.project.activeItem;
+      if (!comp) return;
+
       app.beginUndoGroup("Cam");
-      var sel = c.selectedLayers;
-      var cnt = getQuantity();
-      for (var q = 0; q < cnt; q++) {
-        var cm = c.layers.addCamera(getUniqueName(c, "Camera"), [
-          c.width / 2,
-          c.height / 2,
-        ]);
-        if (sel.length > 0) {
-          cm.inPoint = sel[0].inPoint;
-          cm.outPoint = sel[0].outPoint;
-          cm.moveBefore(sel[0]);
+      try {
+        var targets = getSelectedTargets(comp);
+        var qty = getQuantity();
+
+        if (targets.length > 0) {
+          for (var j = 0; j < targets.length; j++) {
+            var target = targets[j];
+            var start = target.inPoint;
+            var end = target.outPoint;
+            var insertionRef = target;
+
+            for (var cnt = 0; cnt < qty; cnt++) {
+              var camera = createLayer("Camera", comp);
+
+              camera.inPoint = start;
+              camera.outPoint = end;
+
+              camera.moveBefore(insertionRef);
+              insertionRef = camera;
+            }
+          }
+        } else {
+          for (var k = 0; k < qty; k++) {
+            var camera = createLayer("Camera", comp);
+
+            camera.inPoint = 0;
+            camera.outPoint = comp.duration;
+          }
         }
+      } catch (err) {
+      } finally {
+        app.endUndoGroup();
       }
-      app.endUndoGroup();
     }
+    /* Light */
     function addLight() {
-      var c = app.project.activeItem;
-      if (!c) return;
+      var comp = app.project.activeItem;
+      if (!comp) return;
+
       app.beginUndoGroup("Light");
-      var sel = c.selectedLayers;
-      var cnt = getQuantity();
-      for (var q = 0; q < cnt; q++) {
-        var l = c.layers.addLight(getUniqueName(c, "Light"), [
-          c.width / 2,
-          c.height / 2,
-        ]);
-        if (sel.length > 0) {
-          l.inPoint = sel[0].inPoint;
-          l.outPoint = sel[0].outPoint;
-          l.moveBefore(sel[0]);
+      try {
+        var targets = getSelectedTargets(comp);
+        var qty = getQuantity();
+
+        if (targets.length > 0) {
+          for (var j = 0; j < targets.length; j++) {
+            var target = targets[j];
+            var start = target.inPoint;
+            var end = target.outPoint;
+            var insertionRef = target;
+
+            for (var cnt = 0; cnt < qty; cnt++) {
+              var light = createLayer("Light", comp);
+
+              light.inPoint = start;
+              light.outPoint = end;
+              light.moveBefore(insertionRef);
+              insertionRef = light;
+            }
+          }
+        } else {
+          for (var k = 0; k < qty; k++) {
+            var light = createLayer("Light", comp);
+
+            light.inPoint = 0;
+            light.outPoint = comp.duration;
+          }
         }
+      } catch (err) {
+        alert(err.toString());
+      } finally {
+        app.endUndoGroup();
       }
-      app.endUndoGroup();
     }
 
     function getSelectedTargets(comp) {
@@ -993,6 +1021,43 @@
       });
 
       return targets;
+    }
+
+    function createLayer(mode, comp) {
+      var layer;
+      switch (mode) {
+        case "Camera":
+          layer = comp.layers.addCamera(getUniqueName(comp, "Camera"), [
+            comp.width / 2,
+            comp.height / 2,
+          ]);
+          break;
+        case "Solid":
+          layer = comp.layers.addSolid(
+            [0, 0, 0],
+            "Black Solid",
+            comp.width,
+            comp.height,
+            1
+          );
+          break;
+        case "Adjustment Layer":
+          layer = comp.layers.addSolid(
+            [1, 1, 1],
+            "Adjustment Layer",
+            comp.width,
+            comp.height,
+            1
+          );
+          break;
+        case "Light":
+          layer = comp.layers.addLight(getUniqueName(comp, "Light"), [
+            comp.width / 2,
+            comp.height / 2,
+          ]);
+          break;
+      }
+      return layer;
     }
 
     // --- Event Wiring ---
